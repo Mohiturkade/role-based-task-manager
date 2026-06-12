@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { fetchActivityLogs } from '../../services/api';
-import Navbar from '../../components/common/Navbar';
-import { useAuth } from '../../context/AuthContext';
+import Navbar from '../../components/Common/Navbar';
+import { useAuth } from '../../Context/AuthContext';
 
 const ACTION_ICONS = {
   LOGIN:'🔐', LOGOUT:'🚪', TASK_CREATED:'➕', TASK_UPDATED:'✏️',

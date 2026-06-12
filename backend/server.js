@@ -14,7 +14,7 @@ const corsOptions = {
   origin: [
     'http://localhost:5173',
     'http://localhost:3000',
-    'https://rolebasedtaskmanager.netlify.app',
+    'https://roledbasedtaskmanager.netlify.app',
   ],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],

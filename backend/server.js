@@ -12,7 +12,10 @@ dbConnect()
 
 const app = express();
 
-app.use(cors());
+app.use(cors({
+  origin: 'https://roledbasedtaskmanager.netlify.app', 
+  credentials: true
+}));
 
 // Middleware
 app.use(express.json())

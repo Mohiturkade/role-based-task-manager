@@ -1,45 +1,16 @@
-const express = require("express");
-
-const {
-  getAllUsers,
-  deleteUser,
-  updateUserStatus,
-  getAllTasks,
-  deleteAnyTask,
-  getActivityLogs,
-  getAnalytics,
-} = require("../controllers/adminController");
-
-const authMiddleware =
-require("../middleware/authMiddleware");
-
-const roleMiddleware =
-require("../middleware/roleMiddleware");
-
+const express = require('express');
 const router = express.Router();
+const { getAllUsers, deleteUser, updateUserStatus, getAllTasks, deleteAnyTask, getStats } =
+  require('../controllers/adminController');
+const { protect, adminOnly } = require('../middleware/authMiddleware');
 
-// Admin only
-router.use(authMiddleware);
-router.use(roleMiddleware("Admin"));
+router.use(protect, adminOnly);
 
-router.get("/users", getAllUsers);
-
-router.delete("/users/:id", deleteUser);
-
-router.patch(
-  "/users/:id/status",
-  updateUserStatus
-);
-
-router.get("/tasks", getAllTasks);
-
-router.delete(
-  "/tasks/:id",
-  deleteAnyTask
-);
-
-router.get("/logs", getActivityLogs);
-
-router.get("/analytics", getAnalytics);
+router.get('/stats', getStats);
+router.get('/users', getAllUsers);
+router.delete('/users/:id', deleteUser);
+router.patch('/users/:id/status', updateUserStatus);
+router.get('/tasks', getAllTasks);
+router.delete('/tasks/:id', deleteAnyTask);
 
 module.exports = router;

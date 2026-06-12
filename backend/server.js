@@ -13,7 +13,7 @@ dbConnect()
 const app = express();
 
 app.use(cors({
-  origin: ['http://localhost:5173', 'https://roledbasedtaskmanager.netlify.app'], 
+  origin: 'https://roledbasedtaskmanager.netlify.app', 
   credentials: true
 }));
 

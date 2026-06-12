@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { fetchStats } from '../../services/api';
-import Navbar from '../../components/common/Navbar';
+import Navbar from '../../components/Common/Navbar';
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts';
 
 const COLORS = ['#f59e0b','#3b82f6','#10b981'];

@@ -1,1 +1,2 @@
-gir
+node_modules/
+.env

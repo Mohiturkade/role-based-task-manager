@@ -1,150 +1,70 @@
-const User = require("../models/User");
-const Task = require("../models/Task");
-const ActivityLog = require("../models/ActivityLog");
+const User = require('../models/User');
+const Task = require('../models/Task');
+const { logActivity } = require('../middleware/activityLogger');
 
-// Get All users
 const getAllUsers = async (req, res) => {
   try {
-    const users = await User.find().select("-password");
-
-    res.status(200).json(users);
-  } catch (error) {
-    res.status(500).json({
-      message: error.message,
-    });
-  }
+    const users = await User.find().sort({ createdAt: -1 });
+    res.json({ success: true, count: users.length, users });
+  } catch (e) { res.status(500).json({ success: false, message: e.message }); }
 };
 
-// Delete user
 const deleteUser = async (req, res) => {
   try {
+    if (req.params.id === req.user._id.toString())
+      return res.status(400).json({ success: false, message: 'Cannot delete yourself' });
     const user = await User.findById(req.params.id);
-
-    if (!user) {
-      return res.status(404).json({
-        message: "User not found",
-      });
-    }
-
-    await User.findByIdAndDelete(req.params.id);
-
-    res.status(200).json({
-      message: "User deleted successfully",
-    });
-  } catch (error) {
-    res.status(500).json({
-      message: error.message,
-    });
-  }
+    if (!user) return res.status(404).json({ success: false, message: 'User not found' });
+    await Task.deleteMany({ user: req.params.id });
+    await user.deleteOne();
+    await logActivity(req.user._id, 'USER_DELETED', `Admin deleted ${user.name}`, {}, req);
+    res.json({ success: true, message: 'User deleted' });
+  } catch (e) { res.status(500).json({ success: false, message: e.message }); }
 };
 
-// Update user status
 const updateUserStatus = async (req, res) => {
   try {
     const { status } = req.body;
-
-    const user = await User.findByIdAndUpdate(
-      req.params.id,
-      { status },
-      { new: true }
-    );
-
-    res.status(200).json(user);
-  } catch (error) {
-    res.status(500).json({
-      message: error.message,
-    });
-  }
+    if (!['Active','Inactive'].includes(status))
+      return res.status(400).json({ success: false, message: 'Invalid status' });
+    if (req.params.id === req.user._id.toString())
+      return res.status(400).json({ success: false, message: 'Cannot change your own status' });
+    const user = await User.findByIdAndUpdate(req.params.id, { status }, { new: true });
+    if (!user) return res.status(404).json({ success: false, message: 'User not found' });
+    await logActivity(req.user._id, 'USER_STATUS_UPDATED', `Status of ${user.name} → ${status}`, {}, req);
+    res.json({ success: true, user });
+  } catch (e) { res.status(500).json({ success: false, message: e.message }); }
 };
 
-// View all tasks
 const getAllTasks = async (req, res) => {
   try {
-    const tasks = await Task.find().populate(
-      "createdBy",
-      "name email"
-    );
-
-    res.status(200).json(tasks);
-  } catch (error) {
-    res.status(500).json({
-      message: error.message,
-    });
-  }
+    const tasks = await Task.find().populate('user','name email role').sort({ createdAt: -1 });
+    res.json({ success: true, count: tasks.length, tasks });
+  } catch (e) { res.status(500).json({ success: false, message: e.message }); }
 };
 
-// Delete any task
 const deleteAnyTask = async (req, res) => {
   try {
     const task = await Task.findById(req.params.id);
-
-    if (!task) {
-      return res.status(404).json({
-        message: "Task not found",
-      });
-    }
-
-    await Task.findByIdAndDelete(req.params.id);
-
-    res.status(200).json({
-      message: "Task deleted successfully",
-    });
-  } catch (error) {
-    res.status(500).json({
-      message: error.message,
-    });
-  }
+    if (!task) return res.status(404).json({ success: false, message: 'Task not found' });
+    await task.deleteOne();
+    await logActivity(req.user._id, 'TASK_DELETED', `Admin deleted task "${task.title}"`, {}, req);
+    res.json({ success: true, message: 'Task deleted' });
+  } catch (e) { res.status(500).json({ success: false, message: e.message }); }
 };
 
-// Activity logs
-const getActivityLogs = async (req, res) => {
+const getStats = async (req, res) => {
   try {
-    const logs = await ActivityLog.find()
-      .populate("userId", "name email")
-      .sort({ timestamp: -1 });
-
-    res.status(200).json(logs);
-  } catch (error) {
-    res.status(500).json({
-      message: error.message,
-    });
-  }
+    const [totalUsers, totalTasks, completedTasks, pendingTasks, inProgressTasks] =
+      await Promise.all([
+        User.countDocuments({ role: 'User' }),
+        Task.countDocuments(),
+        Task.countDocuments({ status: 'Completed' }),
+        Task.countDocuments({ status: 'Pending' }),
+        Task.countDocuments({ status: 'In Progress' }),
+      ]);
+    res.json({ success: true, stats: { totalUsers, totalTasks, completedTasks, pendingTasks, inProgressTasks } });
+  } catch (e) { res.status(500).json({ success: false, message: e.message }); }
 };
 
-// Analytics
-const getAnalytics = async (req, res) => {
-  try {
-    const totalUsers = await User.countDocuments();
-
-    const totalTasks = await Task.countDocuments();
-
-    const completedTasks = await Task.countDocuments({
-      completed: true,
-    });
-
-    const pendingTasks = await Task.countDocuments({
-      completed: false,
-    });
-
-    res.status(200).json({
-      totalUsers,
-      totalTasks,
-      completedTasks,
-      pendingTasks,
-    });
-  } catch (error) {
-    res.status(500).json({
-      message: error.message,
-    });
-  }
-};
-
-module.exports = {
-  getAllUsers,
-  deleteUser,
-  updateUserStatus,
-  getAllTasks,
-  deleteAnyTask,
-  getActivityLogs,
-  getAnalytics,
-};
+module.exports = { getAllUsers, deleteUser, updateUserStatus, getAllTasks, deleteAnyTask, getStats };
